@@ -1,12 +1,10 @@
 import sys
 import pandas as pd
 import numpy as np
-from scipy import stats
 from sklearn import preprocessing
-from sklearn.neighbors import LocalOutlierFactor
-from sklearn.covariance import EllipticEnvelope
-from sklearn.ensemble import IsolationForest
 from sklearn.impute import SimpleImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer, KNNImputer
 
 
 class Solver:
@@ -94,11 +92,37 @@ class Solver:
             self.df_numerical.median())
 
         nominal_data = self.df_nominal.copy()
-        for col in self.df_nominal.copy:
+        for col in nominal_data:
             # mode counts the most frequent value
             ma = nominal_data[col].mode()[0]
             nominal_data[col] = nominal_data[col].fillna(ma)
         self.df_nominal_mean_imputed = nominal_data
+
+    def multivariate_imputation(self):
+        numerical_data = self.df_numerical.copy()
+        imputer = IterativeImputer(max_iter=10, random_state=42)
+        imputed = imputer.fit_transform(numerical_data)
+        df_imputed = pd.DataFrame(imputed, columns=numerical_data.columns)
+        self.df_numerical_multivariate_imputed = df_imputed
+
+        nominal_data = self.df_nominal.copy()
+        imp = IterativeImputer(max_iter=10, random_state=42)
+        imp = imp.fit_transform(nominal_data)
+        df_imp = pd.DataFrame(imp, columns=nominal_data.columns)
+        self.df_nominal_multivariate_imputed = df_imp
+
+        data = self.df.copy()
+        imput = IterativeImputer(max_iter=10, random_state=42)
+        imput = imput.fit_transform(data)
+        df_imput = pd.DataFrame(imput, columns=data.columns)
+        self.df_multivariate_imputed = df_imput
+
+    def nearest_neighbour_imputation(self):
+        # not implemented yet
+        numerical_data = self.df_numerical.copy()
+        imputer = KNNImputer(n_neighbors=2)
+
+        return
 
     def main(self):
 
@@ -113,8 +137,9 @@ class Solver:
         self.std3_outlier_processing()
 
         # NaN imputation methods
-        self.mean_imputation()
-        self.median_imputation()
+        self.mean_and_median_imputation()
+        self.multivariate_imputation()
+        self.nearest_neighbour_imputation()
 
 
 if __name__ == '__main__':
