@@ -5,6 +5,12 @@ from sklearn import preprocessing
 from sklearn.impute import SimpleImputer
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer, KNNImputer
+from sklearn import tree
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from sklearn import metrics
+from sklearn.metrics import f1_score
 
 
 class Solver:
@@ -56,13 +62,18 @@ class Solver:
         # print(self.df_robust_normalized.select_dtypes(
         #     include=[np.number]).max())
 
-    def std3_outlier_processing(self):
+    def std3_and_10_outlier_processing(self):
         # print(self.df_numerical.select_dtypes(include=[np.number]).max())
         numerical_data = self.df_numerical.copy()
         df_numerical_std3_to_NaN = self.df_numerical.copy()
         df_numerical_std3_to_mean = self.df_numerical.copy()
         df_numerical_std3_to_std = self.df_numerical.copy()
         df_numerical_std3_delete = self.df_numerical.copy()
+
+        df_numerical_10_to_NaN = self.df_numerical.copy()
+        df_numerical_10_to_mean = self.df_numerical.copy()
+        df_numerical_10_to_std = self.df_numerical.copy()
+        df_numerical_10_delete = self.df_numerical.copy()
 
         for col in numerical_data.columns:
             mean = numerical_data[col].mean()
@@ -71,17 +82,30 @@ class Solver:
             teller = 0
             for x in numerical_data[col]:
                 if abs(x - median) > std:
-                    teller += 1
                     df_numerical_std3_to_NaN[col] = numerical_data[col].replace(
                         x, np.nan)
                     df_numerical_std3_to_mean[col] = numerical_data[col].replace(
                         x, mean)
                     df_numerical_std3_to_std[col] = numerical_data[col].replace(
                         x, (x - mean) / std)
+                if abs(x) > 10:
+                    df_numerical_10_to_NaN[col] = numerical_data[col].replace(
+                        x, np.nan)
+                    df_numerical_10_to_mean[col] = numerical_data[col].replace(
+                        x, mean)
+                    df_numerical_10_to_std[col] = numerical_data[col].replace(
+                        x, (x - mean) / std)
+                    df_numerical_10_delete[col] = numerical_data[col].replace(
+                        x, np.nan)
 
         self.df_numerical_std3_to_NaN = df_numerical_std3_to_NaN
         self.df_numerical_std3_to_mean = df_numerical_std3_to_mean
         self.df_numerical_std3_to_std = df_numerical_std3_to_std
+
+        self.df_numerical_10_to_NaN = df_numerical_10_to_NaN
+        self.df_numerical_10_to_mean = df_numerical_10_to_mean
+        self.df_numerical_10_to_std = df_numerical_10_to_std
+
         # print(self.df_numerical_std3_to_NaN.select_dtypes(
         #     include=[np.number]).max())
 
@@ -124,24 +148,43 @@ class Solver:
 
         return
 
+    def decision_tree_classifier(self):
+        # numerical_data = self.df_multivariate_imputed.copy()
+        # nominal_data = self.df_nominal_multivariate_imputed.copy()
+        numerical_data = self.df_numerical_mean_imputed.copy()
+        nominal_data = self.df_nominal_mean_imputed.copy()
+        training_data = pd.concat([numerical_data, nominal_data], axis=1)
+        training_data = training_data.dropna()
+        labels = np.asarray(self.df_target[self.target_column])
+        X_train, X_test, y_train, y_test = train_test_split(
+            training_data, labels, test_size=0.3, random_state=2)
+        clf = DecisionTreeClassifier()
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict(X_test)
+        print("Accuracy:", metrics.accuracy_score(y_test, y_pred))
+        print(y_pred.shape)
+        print(f1_score(y_test, y_pred, average=None))
+
     def main(self):
 
         # Normalization methods
-        self.standardize()
-        self.min_max_normalize()
-        self.robust_standardize()
+        # self.standardize()
+        # self.min_max_normalize()
+        # self.robust_standardize()
 
         # Outlier processing methods
         # Converts the outliers to 'NaN', 'mean' and 'standardization' '
         # delete' not implemented yet
-        self.std3_outlier_processing()
+        # self.std3_and_10_outlier_processing()
 
         # NaN imputation methods
         self.mean_and_median_imputation()
-        self.multivariate_imputation()
-        self.nearest_neighbour_imputation()
+        # self.multivariate_imputation()
+        # self.nearest_neighbour_imputation()
+
+        self.decision_tree_classifier()
 
 
 if __name__ == '__main__':
-    solver = Solver('ecoli.csv', 'ecoli_tect.csv')
+    solver = Solver('ecoli.csv', 'ecoli_test.csv')
     solver.main()
