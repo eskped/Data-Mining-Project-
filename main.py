@@ -1,13 +1,12 @@
 import sys
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from sklearn import metrics
-from sklearn.metrics import f1_score
 from sklearn.model_selection import cross_validate
 import matplotlib.pyplot as plt
 from preprocessing import *
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 
 class Solver:
@@ -27,55 +26,21 @@ class Solver:
             self.df_numerical = self.df_numerical.drop(
                 self.target_column, axis=1)
 
-    def decision_tree_classifier(self):
-        # numerical_data = self.df_multivariate_imputed.copy()
-        # nominal_data = self.df_nominal_multivariate_imputed.copy()
-        numerical_data = self.df_numerical_mean_imputed.copy()
-        nominal_data = self.df_nominal_mean_imputed.copy()
-        training_data = pd.concat([numerical_data, nominal_data], axis=1)
-        training_data = training_data.dropna()
-        labels = np.asarray(self.df_target[self.target_column])
-        X_train, X_test, y_train, y_test = train_test_split(
-            training_data, labels, test_size=0.3, random_state=2)
-        clf = DecisionTreeClassifier()
-        clf.fit(X_train, y_train)
-        y_pred = clf.predict(X_test)
-        print("Accuracy:", metrics.accuracy_score(y_test, y_pred))
-        print(y_pred.shape)
-        print(f1_score(y_test, y_pred, average=None))
-
     def cross_validation(self, model, _X, _y, _cv):
-        # numerical_data = self.df_numerical_mean_imputed.copy()
-        # nominal_data = self.df_nominal_mean_imputed.copy()
-        # _X = pd.concat([numerical_data, nominal_data], axis=1)
-        # _y = self.df_target.copy()
-        # _cv = 5
 
-        _scoring = ['accuracy', 'precision', 'recall', 'f1']
         results = cross_validate(estimator=model,
                                  X=_X,
                                  y=_y,
                                  cv=_cv,
-                                 scoring=_scoring,
+                                 scoring=['f1'],
                                  return_train_score=True)
 
-        return {"Training Accuracy scores": results['train_accuracy'],
-                "Mean Training Accuracy": results['train_accuracy'].mean()*100,
-                "Training Precision scores": results['train_precision'],
-                "Mean Training Precision": results['train_precision'].mean(),
-                "Training Recall scores": results['train_recall'],
-                "Mean Training Recall": results['train_recall'].mean(),
-                "Training F1 scores": results['train_f1'],
-                "Mean Training F1 Score": results['train_f1'].mean(),
-                "Validation Accuracy scores": results['test_accuracy'],
-                "Mean Validation Accuracy": results['test_accuracy'].mean()*100,
-                "Validation Precision scores": results['test_precision'],
-                "Mean Validation Precision": results['test_precision'].mean(),
-                "Validation Recall scores": results['test_recall'],
-                "Mean Validation Recall": results['test_recall'].mean(),
-                "Validation F1 scores": results['test_f1'],
-                "Mean Validation F1 Score": results['test_f1'].mean()
-                }
+        return {
+            "Training F1 scores": results['train_f1'],
+            "Mean Training F1 Score": results['train_f1'].mean(),
+            "Validation F1 scores": results['test_f1'],
+            "Mean Validation F1 Score": results['test_f1'].mean(),
+        }
 
     def plot_result(self, x_label, y_label, plot_title, train_data, val_data, cv):
         plt.figure(figsize=(12, 6))
@@ -95,25 +60,65 @@ class Solver:
         plt.grid(True)
         plt.show()
 
-    def model_training(self):
-        X = self.df_multivariate_imputed.copy()
+    def decision_tree_classifier(self, training_data, nominal_data, numerical_data, cv, plot):
+        if training_data == None:
+            training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
-        decision_tree_model = DecisionTreeClassifier(criterion="entropy", min_samples_split=2, max_depth=1,
-                                                     random_state=0)
+        decision_tree_model = DecisionTreeClassifier(criterion="entropy", min_samples_split=10, max_depth=4,
+                                                     random_state=None)
+        decision_tree_model.fit(training_data, labels)
 
         decision_tree_result = self.cross_validation(
-            decision_tree_model, X, labels, 5)
-        print(decision_tree_result)
+            decision_tree_model, training_data, labels, cv)
+        if plot:
+            model_name = "Decision Tree"
+            self.plot_result(model_name,
+                             "F1",
+                             "F1 Scores in 5 Folds",
+                             decision_tree_result["Training F1 scores"],
+                             decision_tree_result["Validation F1 scores"], cv)
 
-        model_name = "Decision Tree"
-        self.plot_result(model_name,
-                         "F1",
-                         "F1 Scores in 5 Folds",
-                         decision_tree_result["Training F1 scores"],
-                         decision_tree_result["Validation F1 scores"], 5)
+        return decision_tree_result
 
-    def F1_score(self, y_test, y_pred):
-        return f1_score(y_test, y_pred, average=None)
+    def random_forest_classifier(self, training_data, nominal_data, numerical_data, cv, plot):
+        if training_data == None:
+            training_data = pd.concat([numerical_data, nominal_data], axis=1)
+        labels = self.df_target.copy()
+        random_forest_model = RandomForestClassifier(criterion="gini", max_features=50,
+                                                     max_depth=20, n_estimators=10000)
+
+        random_forest_result = self.cross_validation(
+            random_forest_model, training_data, labels.values.ravel(), cv)
+        if plot:
+            model_name = "Random Forest"
+            self.plot_result(model_name,
+                             "F1",
+                             "F1 Scores in 5 Folds with random forest",
+                             random_forest_result["Training F1 scores"],
+                             random_forest_result["Validation F1 scores"], cv)
+
+        return random_forest_result
+
+    def k_nearst_neighbor_classifier(self, training_data, nominal_data, numerical_data, cv, plot):
+        if training_data == None:
+            training_data = pd.concat([numerical_data, nominal_data], axis=1)
+        labels = self.df_target.copy()
+        results = {}
+        for k in range(5, 100):
+            k_nearst_neighbor_model = KNeighborsClassifier(n_neighbors=k)
+            k_nearst_neighbor_result = self.cross_validation(
+                k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
+            results[k] = k_nearst_neighbor_result["Mean Validation F1 Score"]
+        print(results)
+        if plot:
+            model_name = "K Nearst Neighbor"
+            self.plot_result(model_name,
+                             "F1",
+                             "F1 Scores in 5 Folds with K Nearst Neighbor",
+                             k_nearst_neighbor_result["Training F1 scores"],
+                             k_nearst_neighbor_result["Validation F1 scores"], cv)
+
+        return results
 
     def main(self):
 
@@ -132,14 +137,22 @@ class Solver:
             numerical_data)
 
         # NaN imputation methods
-        self.df_numerical_mean_imputed, self.df_numerical_median_imputed, self.df_nominal_mean_imputed = mean_and_median_imputation(
+        self.df_numerical_mean_imputed, self.df_numerical_median_imputed, self.df_nominal_median_imputed = mean_and_median_imputation(
             numerical_data, nominal_data)
         self.df_numerical_multivariate_imputed, self.df_nominal_multivariate_imputed, self.df_multivariate_imputed = multivariate_imputation(
             self.df.copy(), numerical_data, nominal_data)
 
-        # self.decision_tree_classifier()
+        """ Results from decision tree classifier:
+        Rersults of range 0.5 - 0.75 when using numerical and nominal seperately. Max-depth is best around 4
+        When using df multivarite results of 1.0
+        """
+        # print(self.decision_tree_classifier(None,
+        #                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, True))
+        # print(self.random_forest_classifier(None,
+        #                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, True))
 
-        self.model_training()
+        print(self.k_nearst_neighbor_classifier(None,
+                                                self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, False))
 
 
 if __name__ == '__main__':
