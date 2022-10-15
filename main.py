@@ -85,7 +85,7 @@ class Solver:
             training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
         random_forest_model = RandomForestClassifier(criterion="gini", max_features=50,
-                                                     max_depth=20, n_estimators=10000)
+                                                     max_depth=20, n_estimators=500)
 
         random_forest_result = self.cross_validation(
             random_forest_model, training_data, labels.values.ravel(), cv)
