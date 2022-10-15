@@ -1,18 +1,13 @@
 import sys
 import pandas as pd
 import numpy as np
-from sklearn import preprocessing
-from sklearn.impute import SimpleImputer
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer, KNNImputer
-from sklearn import tree
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
 from sklearn import metrics
 from sklearn.metrics import f1_score
 from sklearn.model_selection import cross_validate
 import matplotlib.pyplot as plt
+from preprocessing import *
 
 
 class Solver:
@@ -31,129 +26,6 @@ class Solver:
             self.df_target = self.df[self.target_column]
             self.df_numerical = self.df_numerical.drop(
                 self.target_column, axis=1)
-
-    def standardize(self):
-        # print(self.df_numerical.select_dtypes(include=[np.number]).min())
-        numerical_data = self.df_numerical.copy()
-        scaler = preprocessing.StandardScaler().fit(numerical_data)
-        standardized_numerical_data = scaler.transform(numerical_data)
-        self.df_numerical_standardized = pd.DataFrame(
-            standardized_numerical_data, columns=numerical_data.columns)
-        # print(self.df_numerical_standardized.select_dtypes(
-        #     include=[np.number]).min())
-
-    def min_max_normalize(self):
-        # print(self.df_numerical.select_dtypes(include=[np.number]).min())
-        numerical_data = self.df_numerical.copy()
-        scaler = preprocessing.MaxAbsScaler().fit(numerical_data)
-        normalized_data = scaler.transform(numerical_data)
-        self.df_numerical_min_max_normalized = pd.DataFrame(
-            normalized_data, columns=numerical_data.columns)
-        # print(self.df_min_max_normalized.select_dtypes(
-        #     include=[np.number]).min())
-
-    def robust_standardize(self):
-        # print(self.df_numerical.select_dtypes(include=[np.number]).max())
-        numerical_data = self.df_numerical.copy()
-        tup = (0.05, 0.95)
-        scaler = preprocessing.RobustScaler(
-            quantile_range=tup).fit(numerical_data)
-        normalized_data = scaler.transform(numerical_data)
-        self.df_numerical_robust_normalized = pd.DataFrame(
-            normalized_data, columns=numerical_data.columns)
-        # print(self.df_robust_normalized.select_dtypes(
-        #     include=[np.number]).max())
-
-    def std3_and_10_outlier_processing(self):
-        # print(self.df_numerical.select_dtypes(include=[np.number]).max())
-        numerical_data = self.df_numerical.copy()
-        df_numerical_std3_to_NaN = self.df_numerical.copy()
-        df_numerical_std3_to_mean = self.df_numerical.copy()
-        df_numerical_std3_to_std = self.df_numerical.copy()
-        df_numerical_std3_delete = self.df_numerical.copy()
-
-        df_numerical_10_to_NaN = self.df_numerical.copy()
-        df_numerical_10_to_mean = self.df_numerical.copy()
-        df_numerical_10_to_std = self.df_numerical.copy()
-        df_numerical_10_delete = self.df_numerical.copy()
-
-        for col in numerical_data.columns:
-            mean = numerical_data[col].mean()
-            std = numerical_data[col].std()
-            median = numerical_data[col].median()
-            teller = 0
-            for x in numerical_data[col]:
-                if abs(x - median) > std:
-                    df_numerical_std3_to_NaN[col] = numerical_data[col].replace(
-                        x, np.nan)
-                    df_numerical_std3_to_mean[col] = numerical_data[col].replace(
-                        x, mean)
-                    df_numerical_std3_to_std[col] = numerical_data[col].replace(
-                        x, (x - mean) / std)
-                if abs(x) > 10:
-                    df_numerical_10_to_NaN[col] = numerical_data[col].replace(
-                        x, np.nan)
-                    df_numerical_10_to_mean[col] = numerical_data[col].replace(
-                        x, mean)
-                    df_numerical_10_to_std[col] = numerical_data[col].replace(
-                        x, (x - mean) / std)
-                    df_numerical_10_delete[col] = numerical_data[col].replace(
-                        x, np.nan)
-
-        self.df_numerical_std3_to_NaN = df_numerical_std3_to_NaN
-        self.df_numerical_std3_to_mean = df_numerical_std3_to_mean
-        self.df_numerical_std3_to_std = df_numerical_std3_to_std
-
-        self.df_numerical_10_to_NaN = df_numerical_10_to_NaN
-        self.df_numerical_10_to_mean = df_numerical_10_to_mean
-        self.df_numerical_10_to_std = df_numerical_10_to_std
-
-        # print(self.df_numerical_std3_to_NaN.select_dtypes(
-        #     include=[np.number]).max())
-
-    def mean_and_median_imputation(self):
-        self.df_numerical_mean_imputed = self.df_numerical.copy().fillna(
-            self.df_numerical.mean())
-        self.df_numerical_median_imputed = self.df_numerical.copy().fillna(
-            self.df_numerical.median())
-
-        nominal_data = self.df_nominal.copy()
-        for col in nominal_data:
-            # mode counts the most frequent value
-            ma = nominal_data[col].mode()[0]
-            nominal_data[col] = nominal_data[col].fillna(ma)
-        self.df_nominal_mean_imputed = nominal_data
-
-    def multivariate_imputation(self):
-        try:
-            self.df_multivariate_imputed = pd.read_csv(
-                'df_multivariate_imputed.csv')
-        except:
-            numerical_data = self.df_numerical.copy()
-            imputer = IterativeImputer(max_iter=10, random_state=42)
-            imputed = imputer.fit_transform(numerical_data)
-            df_imputed = pd.DataFrame(imputed, columns=numerical_data.columns)
-            self.df_numerical_multivariate_imputed = df_imputed
-
-            nominal_data = self.df_nominal.copy()
-            imp = IterativeImputer(max_iter=10, random_state=42)
-            imp = imp.fit_transform(nominal_data)
-            df_imp = pd.DataFrame(imp, columns=nominal_data.columns)
-            self.df_nominal_multivariate_imputed = df_imp
-
-            data = self.df.copy()
-            imput = IterativeImputer(max_iter=10, random_state=42)
-            imput = imput.fit_transform(data)
-            df_imput = pd.DataFrame(imput, columns=data.columns)
-            self.df_multivariate_imputed = df_imput
-            df_imput.to_csv('df_multivariate_imputed.csv')
-
-    def nearest_neighbour_imputation(self):
-        # not implemented yet
-        numerical_data = self.df_numerical.copy()
-        imputer = KNNImputer(n_neighbors=2)
-
-        return
 
     def decision_tree_classifier(self):
         # numerical_data = self.df_multivariate_imputed.copy()
@@ -224,16 +96,13 @@ class Solver:
         plt.show()
 
     def model_training(self):
-        # numerical_data = self.df_numerical_median_imputed.copy()
-        # nominal_data = self.df_nominal_mean_imputed.copy()
-        # X = pd.concat([numerical_data, nominal_data], axis=1)
         X = self.df_multivariate_imputed.copy()
-        encoded_y = self.df_target.copy()
-        decision_tree_model = DecisionTreeClassifier(criterion="entropy", min_samples_split=5, max_depth=7,
+        labels = self.df_target.copy()
+        decision_tree_model = DecisionTreeClassifier(criterion="entropy", min_samples_split=2, max_depth=1,
                                                      random_state=0)
 
         decision_tree_result = self.cross_validation(
-            decision_tree_model, X, encoded_y, 5)
+            decision_tree_model, X, labels, 5)
         print(decision_tree_result)
 
         model_name = "Decision Tree"
@@ -243,22 +112,30 @@ class Solver:
                          decision_tree_result["Training F1 scores"],
                          decision_tree_result["Validation F1 scores"], 5)
 
+    def F1_score(self, y_test, y_pred):
+        return f1_score(y_test, y_pred, average=None)
+
     def main(self):
 
         # Normalization methods
-        # self.standardize()
-        # self.min_max_normalize()
-        # self.robust_standardize()
+        numerical_data = self.df_numerical.copy()
+        nominal_data = self.df_nominal.copy()
+        self.df_numerical_standardized = standardize(numerical_data)
+        self.df_numerical_min_max_normalized = min_max_normalize(
+            numerical_data)
+        self.df_numerical_robust_normalized = robust_standardize(
+            numerical_data)
 
         # Outlier processing methods
-        # Converts the outliers to 'NaN', 'mean' and 'standardization' '
-        # delete' not implemented yet
-        # self.std3_and_10_outlier_processing()
+        # Converts the outliers to 'NaN', 'mean' and 'standardization'
+        self.df_numerical_std3_to_NaN, self.df_numerical_std3_to_mean, self.df_numerical_std3_to_std, self.df_numerical_10_to_NaN, self.df_numerical_10_to_mean, self.df_numerical_10_to_std = std3_and_10_outlier_processing(
+            numerical_data)
 
         # NaN imputation methods
-        self.mean_and_median_imputation()
-        self.multivariate_imputation()
-        # self.nearest_neighbour_imputation()
+        self.df_numerical_mean_imputed, self.df_numerical_median_imputed, self.df_nominal_mean_imputed = mean_and_median_imputation(
+            numerical_data, nominal_data)
+        self.df_numerical_multivariate_imputed, self.df_nominal_multivariate_imputed, self.df_multivariate_imputed = multivariate_imputation(
+            self.df.copy(), numerical_data, nominal_data)
 
         # self.decision_tree_classifier()
 
