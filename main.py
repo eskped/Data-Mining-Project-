@@ -103,13 +103,18 @@ class Solver:
         if training_data == None:
             training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
-        results = {}
-        for k in range(5, 100):
-            k_nearst_neighbor_model = KNeighborsClassifier(n_neighbors=k)
-            k_nearst_neighbor_result = self.cross_validation(
-                k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
-            results[k] = k_nearst_neighbor_result["Mean Validation F1 Score"]
-        print(results)
+        # results = {}
+        # for k in range(1, 30):
+        #     k_nearst_neighbor_model = KNeighborsClassifier(
+        #         n_neighbors=k, p=3)
+        #     k_nearst_neighbor_model.fit(training_data, labels.values.ravel())
+        #     k_nearst_neighbor_result = self.cross_validation(
+        #         k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
+        #     results[k] = k_nearst_neighbor_result["Mean Validation F1 Score"]
+        k_nearst_neighbor_model = KNeighborsClassifier(n_neighbors=17, p=2)
+        k_nearst_neighbor_model.fit(training_data, labels.values.ravel())
+        k_nearst_neighbor_result = self.cross_validation(
+            k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
         if plot:
             model_name = "K Nearst Neighbor"
             self.plot_result(model_name,
@@ -118,7 +123,7 @@ class Solver:
                              k_nearst_neighbor_result["Training F1 scores"],
                              k_nearst_neighbor_result["Validation F1 scores"], cv)
 
-        return results
+        return k_nearst_neighbor_result
 
     def main(self):
 
@@ -139,11 +144,20 @@ class Solver:
         # NaN imputation methods
         self.df_numerical_mean_imputed, self.df_numerical_median_imputed, self.df_nominal_median_imputed = mean_and_median_imputation(
             numerical_data, nominal_data)
+        self.df_numerical_standardized_mean_imputed, self.df_numerical_standardized_median_imputed, _ = mean_and_median_imputation(
+            self.df_numerical_standardized, nominal_data)
+        self.df_numerical_min_max_mean_imputed, self.df_numerical_min_max_median_imputed, _ = mean_and_median_imputation(
+            self.df_numerical_min_max_normalized, nominal_data)
+        self.df_numerical_10_to_mean_imputed, self.df_numerical_10_to_median_imputed, _ = mean_and_median_imputation(
+            self.df_numerical_10_to_std, nominal_data)
+        self.df_numerical_robust_mean_imputed, self.df_numerical_robust_median_imputed, _ = mean_and_median_imputation(
+            self.df_numerical_robust_normalized, nominal_data)
+
         self.df_numerical_multivariate_imputed, self.df_nominal_multivariate_imputed, self.df_multivariate_imputed = multivariate_imputation(
             self.df.copy(), numerical_data, nominal_data)
 
         """ Results from decision tree classifier:
-        Rersults of range 0.5 - 0.75 when using numerical and nominal seperately. Max-depth is best around 4
+        Results of range 0.5 - 0.75 when using numerical and nominal seperately. Max-depth is best around 4
         When using df multivarite results of 1.0
         """
         # print(self.decision_tree_classifier(None,
@@ -151,8 +165,12 @@ class Solver:
         # print(self.random_forest_classifier(None,
         #                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, True))
 
+        """Results from K Nearst Neighbor classifier:
+        Best results when using df_numerical_min_max_[]_imputed, getting results from 0.6-0.85
+        Most other imputated data and normalization methods give poor results, usualt around 0.1 or lower
+        """
         print(self.k_nearst_neighbor_classifier(None,
-                                                self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, False))
+                                                self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, True))
 
 
 if __name__ == '__main__':

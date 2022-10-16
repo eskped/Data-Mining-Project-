@@ -79,15 +79,15 @@ def multivariate_imputation(data, numerical_data, nominal_data):
             'df_multivariate_imputed.csv')
     except:
         # numerical
-        # imputer = IterativeImputer(max_iter=10, random_state=None)
-        # imputed = imputer.fit_transform(numerical_data)
-        # df_imputed = pd.DataFrame(imputed, columns=numerical_data.columns)
-        # df_imputed.to_csv('df_numerical_multivariate_imputed.csv')
-        # # nominal
-        # imp = IterativeImputer(max_iter=10, random_state=None)
-        # imp = imp.fit_transform(nominal_data)
-        # df_imp = pd.DataFrame(imp, columns=nominal_data.columns)
-        # df_imp.to_csv('df_nominal_multivariate_imputed.csv')
+        imputer = IterativeImputer(max_iter=10, random_state=None)
+        imputed = imputer.fit_transform(numerical_data)
+        df_imputed = pd.DataFrame(imputed, columns=numerical_data.columns)
+        df_imputed.to_csv('df_numerical_multivariate_imputed.csv')
+        # nominal
+        imp = IterativeImputer(max_iter=10, random_state=None)
+        imp = imp.fit_transform(nominal_data)
+        df_imp = pd.DataFrame(imp, columns=nominal_data.columns)
+        df_imp.to_csv('df_nominal_multivariate_imputed.csv')
         # all
         imput = IterativeImputer(max_iter=10, random_state=None)
         imput = imput.fit_transform(data)
