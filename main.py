@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from preprocessing import *
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
+import json
 
 
 class Solver:
@@ -25,6 +26,8 @@ class Solver:
             self.df_target = self.df[self.target_column]
             self.df_numerical = self.df_numerical.drop(
                 self.target_column, axis=1)
+        self.df_numericals_processed = []
+        self.df_nominals_processed = []
 
     def cross_validation(self, model, _X, _y, _cv):
 
@@ -84,11 +87,43 @@ class Solver:
         if training_data == None:
             training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
-        random_forest_model = RandomForestClassifier(criterion="gini", max_features=50,
-                                                     max_depth=20, n_estimators=500)
+        cv = 0
+        results = {}
+        max_result = 0
+        max_key = ""
+        # 46 maxdepth
+        # criterion
+        # max_features
+        # min_samples_split
+        # n_estimators
+        for max_depth in range(1, 100, 2):
+            for criterion in ['gini', 'entropy', 'log_loss']:
+                for max_features in ['sqrt', 'log2', 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                    for min_samples_split in range(2, 10, 2):
+                        for n_estimators in range(1, 100, 5):
+                            for cv in range(5, 11, 5):
+                                for numerical_data in self.df_numericals_processed:
+                                    for nominal_data in self.df_nominals_processed:
+                                        training_data = pd.concat(
+                                            [numerical_data, nominal_data], axis=1)
+                                        random_forest_model = RandomForestClassifier(
+                                            max_depth=max_depth, criterion=criterion, max_features=max_features, min_samples_split=min_samples_split, n_estimators=n_estimators, random_state=None)
+                                        random_forest_model.fit(
+                                            training_data, labels.values.ravel())
+                                        random_forest_result = self.cross_validation(
+                                            random_forest_model, training_data, labels.values.ravel(), cv)
+                                        key = f"max_depth={max_depth}, criterion={criterion}, max_features={max_features}, min_samples_split={min_samples_split}, n_estimators={n_estimators}, cv={cv}"
+                                        results[key] = random_forest_result
+                                        if random_forest_result["Mean Validation F1 Score"] > max_result:
+                                            max_result = random_forest_result[
+                                                "Mean Validation F1 Score"]
+                                            max_key = key
 
-        random_forest_result = self.cross_validation(
-            random_forest_model, training_data, labels.values.ravel(), cv)
+        # random_forest_model = RandomForestClassifier(criterion="gini", max_features=17,
+        #                                              max_depth=12, n_estimators=101)
+        # random_forest_model.fit(training_data, labels.values.ravel())
+        # random_forest_result = self.cross_validation(
+        #     random_forest_model, training_data, labels.values.ravel(), cv)
         if plot:
             model_name = "Random Forest"
             self.plot_result(model_name,
@@ -97,7 +132,7 @@ class Solver:
                              random_forest_result["Training F1 scores"],
                              random_forest_result["Validation F1 scores"], cv)
 
-        return random_forest_result
+        return results, max_key, max_result
 
     def k_nearst_neighbor_classifier(self, training_data, nominal_data, numerical_data, cv, plot):
         if training_data == None:
@@ -106,12 +141,14 @@ class Solver:
         # results = {}
         # for k in range(1, 30):
         #     k_nearst_neighbor_model = KNeighborsClassifier(
-        #         n_neighbors=k, p=3)
+        #         n_neighbors=k, p=2, weights='distance')
         #     k_nearst_neighbor_model.fit(training_data, labels.values.ravel())
         #     k_nearst_neighbor_result = self.cross_validation(
         #         k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
         #     results[k] = k_nearst_neighbor_result["Mean Validation F1 Score"]
-        k_nearst_neighbor_model = KNeighborsClassifier(n_neighbors=17, p=2)
+
+        k_nearst_neighbor_model = KNeighborsClassifier(
+            n_neighbors=17, p=2, weights='distance')
         k_nearst_neighbor_model.fit(training_data, labels.values.ravel())
         k_nearst_neighbor_result = self.cross_validation(
             k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
@@ -156,21 +193,36 @@ class Solver:
         self.df_numerical_multivariate_imputed, self.df_nominal_multivariate_imputed, self.df_multivariate_imputed = multivariate_imputation(
             self.df.copy(), numerical_data, nominal_data)
 
+        self.df_numericals_processed = [
+            self.df_numerical_mean_imputed, self.df_numerical_median_imputed, self.df_numerical_standardized_mean_imputed, self.df_numerical_standardized_median_imputed, self.df_numerical_min_max_mean_imputed, self.df_numerical_min_max_median_imputed, self.df_numerical_10_to_mean_imputed, self.df_numerical_10_to_median_imputed, self.df_numerical_robust_mean_imputed, self.df_numerical_robust_median_imputed, self.df_numerical_multivariate_imputed]
+        self.df_nominals_processed = [
+            self.df_nominal_median_imputed, self.df_nominal_multivariate_imputed]
+
         """ Results from decision tree classifier:
         Results of range 0.5 - 0.75 when using numerical and nominal seperately. Max-depth is best around 4
         When using df multivarite results of 1.0
         """
         # print(self.decision_tree_classifier(None,
         #                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, True))
-        # print(self.random_forest_classifier(None,
-        #                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, True))
+        """Results from random forest classifier:
+        0.76 when using cv = 10, max_depth = 20, max_features = 50, n_estimators = 51
+
+        """
+        results, max_key, max_result = self.random_forest_classifier(None,
+                                                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, False)
+        print(results)
+        print(max_key)
+        print(max_result)
+        a_file = open("data.json", "w")
+        json.dump(results, a_file)
+        a_file.close()
 
         """Results from K Nearst Neighbor classifier:
         Best results when using df_numerical_min_max_[]_imputed, getting results from 0.6-0.85
         Most other imputated data and normalization methods give poor results, usualt around 0.1 or lower
         """
-        print(self.k_nearst_neighbor_classifier(None,
-                                                self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, True))
+        # print(self.k_nearst_neighbor_classifier(None,
+        #                                         self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, True))
 
 
 if __name__ == '__main__':
