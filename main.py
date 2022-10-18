@@ -1,13 +1,14 @@
 import sys
 import pandas as pd
 import numpy as np
+from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import cross_validate
 import matplotlib.pyplot as plt
 from preprocessing import *
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
-import json
+from sklearn.model_selection import GridSearchCV
 
 
 class Solver:
@@ -87,43 +88,12 @@ class Solver:
         if training_data == None:
             training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
-        cv = 0
-        results = {}
-        max_result = 0
-        max_key = ""
-        # 46 maxdepth
-        # criterion
-        # max_features
-        # min_samples_split
-        # n_estimators
-        for max_depth in range(1, 100, 2):
-            for criterion in ['gini', 'entropy', 'log_loss']:
-                for max_features in ['sqrt', 'log2', 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-                    for min_samples_split in range(2, 10, 2):
-                        for n_estimators in range(1, 100, 5):
-                            for cv in range(5, 11, 5):
-                                for numerical_data in self.df_numericals_processed:
-                                    for nominal_data in self.df_nominals_processed:
-                                        training_data = pd.concat(
-                                            [numerical_data, nominal_data], axis=1)
-                                        random_forest_model = RandomForestClassifier(
-                                            max_depth=max_depth, criterion=criterion, max_features=max_features, min_samples_split=min_samples_split, n_estimators=n_estimators, random_state=None)
-                                        random_forest_model.fit(
-                                            training_data, labels.values.ravel())
-                                        random_forest_result = self.cross_validation(
-                                            random_forest_model, training_data, labels.values.ravel(), cv)
-                                        key = f"max_depth={max_depth}, criterion={criterion}, max_features={max_features}, min_samples_split={min_samples_split}, n_estimators={n_estimators}, cv={cv}"
-                                        results[key] = random_forest_result
-                                        if random_forest_result["Mean Validation F1 Score"] > max_result:
-                                            max_result = random_forest_result[
-                                                "Mean Validation F1 Score"]
-                                            max_key = key
 
-        # random_forest_model = RandomForestClassifier(criterion="gini", max_features=17,
-        #                                              max_depth=12, n_estimators=101)
-        # random_forest_model.fit(training_data, labels.values.ravel())
-        # random_forest_result = self.cross_validation(
-        #     random_forest_model, training_data, labels.values.ravel(), cv)
+        random_forest_model = RandomForestClassifier(criterion="gini", max_features=17,
+                                                     max_depth=12, n_estimators=101)
+        random_forest_model.fit(training_data, labels.values.ravel())
+        random_forest_result = self.cross_validation(
+            random_forest_model, training_data, labels.values.ravel(), cv)
         if plot:
             model_name = "Random Forest"
             self.plot_result(model_name,
@@ -132,23 +102,14 @@ class Solver:
                              random_forest_result["Training F1 scores"],
                              random_forest_result["Validation F1 scores"], cv)
 
-        return results, max_key, max_result
+        return random_forest_result
 
     def k_nearst_neighbor_classifier(self, training_data, nominal_data, numerical_data, cv, plot):
         if training_data == None:
             training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
-        # results = {}
-        # for k in range(1, 30):
-        #     k_nearst_neighbor_model = KNeighborsClassifier(
-        #         n_neighbors=k, p=2, weights='distance')
-        #     k_nearst_neighbor_model.fit(training_data, labels.values.ravel())
-        #     k_nearst_neighbor_result = self.cross_validation(
-        #         k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
-        #     results[k] = k_nearst_neighbor_result["Mean Validation F1 Score"]
-
         k_nearst_neighbor_model = KNeighborsClassifier(
-            n_neighbors=17, p=2, weights='distance')
+            n_neighbors=30, p=3, weights='uniform')
         k_nearst_neighbor_model.fit(training_data, labels.values.ravel())
         k_nearst_neighbor_result = self.cross_validation(
             k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
@@ -162,6 +123,49 @@ class Solver:
 
         return k_nearst_neighbor_result
 
+    def naive_bayes_classifier(self, nominal_data, numerical_data, cv, plot):
+        training_data = pd.concat([numerical_data, nominal_data], axis=1)
+        labels = self.df_target.copy()
+        naive_bayes_model = GaussianNB(var_smoothing=1)
+        naive_bayes_model.fit(training_data, labels.values.ravel())
+        naive_bayes_result = self.cross_validation(
+            naive_bayes_model, training_data, labels.values.ravel(), cv)
+        if plot:
+            model_name = "Naive Bayes"
+            self.plot_result(model_name,
+                             "F1",
+                             "F1 Scores in 5 Folds with Naive Bayes",
+                             naive_bayes_result["Training F1 scores"],
+                             naive_bayes_result["Validation F1 scores"], cv)
+
+        return naive_bayes_result
+
+    def hyper_parameter_tuning(self, nominal_data, numerical_data):
+        """
+        parameters = {'kernel':('linear', 'rbf'), 'C':[1, 10]}
+        svc = svm.SVC()
+        clf = GridSearchCV(svc, parameters)
+        clf.fit(iris.data, iris.target)
+        GridSearchCV(estimator=SVC(),
+                    param_grid={'C': [1, 10], 'kernel': ('linear', 'rbf')})
+        sorted(clf.cv_results_.keys())
+        ['mean_fit_time', 'mean_score_time', 'mean_test_score',...
+        'param_C', 'param_kernel', 'params',...
+        'rank_test_score', 'split0_test_score',...
+        'split2_test_score', ...
+        'std_fit_time', 'std_score_time', 'std_test_score']
+        """
+        classifier = GaussianNB()
+        parameters = {'n_neighbors': [2, 30], 'p': [1, 2, 3], 'weights': (
+            'uniform', 'distance'),  'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute']}
+        clf = GridSearchCV(classifier, parameters, scoring='f1')
+        training_data = pd.concat([numerical_data, nominal_data], axis=1)
+        labels = self.df_target.copy()
+        clf.fit(training_data, labels.values.ravel())
+        print("Best parameters from gridsearch: {}".format(
+            clf.best_params_))
+        print("CV score=%0.3f" % clf.best_score_)
+
     def main(self):
 
         # Normalization methods
@@ -172,6 +176,7 @@ class Solver:
             numerical_data)
         self.df_numerical_robust_normalized = robust_standardize(
             numerical_data)
+        self.df_numerical_maxabs_scaled = maxabs(numerical_data)
 
         # Outlier processing methods
         # Converts the outliers to 'NaN', 'mean' and 'standardization'
@@ -189,6 +194,23 @@ class Solver:
             self.df_numerical_10_to_std, nominal_data)
         self.df_numerical_robust_mean_imputed, self.df_numerical_robust_median_imputed, _ = mean_and_median_imputation(
             self.df_numerical_robust_normalized, nominal_data)
+        self.df_numerical_maxabs_mean_imputed, self.df_numerical_maxabs_median_imputed, _ = mean_and_median_imputation(
+            self.df_numerical_maxabs_scaled, nominal_data)
+
+        numerical_imputed = {
+            "df_numerical_mean_imputed": self.df_numerical_mean_imputed,
+            "df_numerical_median_imputed": self.df_numerical_median_imputed,
+            "df_numerical_standardized_mean_imputed": self.df_numerical_standardized_mean_imputed,
+            "df_numerical_standardized_median_imputed": self.df_numerical_standardized_median_imputed,
+            "df_numerical_min_max_mean_imputed": self.df_numerical_min_max_mean_imputed,
+            "df_numerical_min_max_median_imputed": self.df_numerical_min_max_median_imputed,
+            "df_numerical_10_to_mean_imputed": self.df_numerical_10_to_mean_imputed,
+            "df_numerical_10_to_median_imputed": self.df_numerical_10_to_median_imputed,
+            "df_numerical_robust_mean_imputed": self.df_numerical_robust_mean_imputed,
+            "df_numerical_robust_median_imputed": self.df_numerical_robust_median_imputed,
+            "df_numerical_maxabs_mean_imputed": self.df_numerical_maxabs_mean_imputed,
+            "df_numerical_maxabs_median_imputed": self.df_numerical_maxabs_median_imputed,
+        }
 
         self.df_numerical_multivariate_imputed, self.df_nominal_multivariate_imputed, self.df_multivariate_imputed = multivariate_imputation(
             self.df.copy(), numerical_data, nominal_data)
@@ -203,26 +225,32 @@ class Solver:
         When using df multivarite results of 1.0
         """
         # print(self.decision_tree_classifier(None,
-        #                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, True))
+        #                                     self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, True))
         """Results from random forest classifier:
         0.76 when using cv = 10, max_depth = 20, max_features = 50, n_estimators = 51
 
         """
-        results, max_key, max_result = self.random_forest_classifier(None,
-                                                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, False)
-        print(results)
-        print(max_key)
-        print(max_result)
-        a_file = open("data.json", "w")
-        json.dump(results, a_file)
-        a_file.close()
+        # print(results=self.random_forest_classifier(None,
+        #                                             self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, False))
 
         """Results from K Nearst Neighbor classifier:
-        Best results when using df_numerical_min_max_[]_imputed, getting results from 0.6-0.85
-        Most other imputated data and normalization methods give poor results, usualt around 0.1 or lower
+        Use df_numerical_min_max_[]_imputed, df_numerical_maxabs_[]_imputed
+        Results from 0.6-0.85. Mean 0.77
+        Hyperparameters: algorithm': 'auto', 'n_neighbors': 30, 'p': 3, 'weights': 'uniform'
         """
         # print(self.k_nearst_neighbor_classifier(None,
         #                                         self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, True))
+
+        """ results from Naive Bayes classifier:
+        numerical data: df_numerical_min_max_median_imputed, df_numerical_maxabs_mean_imputed or df_numerical_maxabs_median_imputed
+        results: 0.766
+        Hyper: var_smooting: 1
+        """
+        # print(self.naive_bayes_classifier(
+        #     self.df_numerical_maxabs_median_imputed, self.df_nominal_median_imputed, 10, False))
+
+        # self.hyper_parameter_tuning(
+        #     self.df_numerical_maxabs_median_imputed, self.df_nominal_median_imputed)
 
 
 if __name__ == '__main__':

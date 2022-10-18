@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
+from sklearn.preprocessing import maxabs_scale
 
 
 def standardize(numerical_data):
@@ -11,7 +12,9 @@ def standardize(numerical_data):
     return pd.DataFrame(
         standardized_numerical_data, columns=numerical_data.columns)
 
-
+def maxabs(numerical_data):
+    return pd.DataFrame(maxabs_scale(numerical_data), columns=numerical_data.columns)
+    
 def min_max_normalize(numerical_data):
     scaler = preprocessing.MaxAbsScaler().fit(numerical_data)
     normalized_data = scaler.transform(numerical_data)
@@ -49,7 +52,7 @@ def std3_and_10_outlier_processing(numerical_data):
                     x, mean)
                 df_numerical_std3_to_std[col] = numerical_data[col].replace(
                     x, (x - mean) / std)
-            if abs(x) > 10:
+            if abs(x) > 5:
                 df_numerical_10_to_NaN[col] = numerical_data[col].replace(
                     x, np.nan)
                 df_numerical_10_to_mean[col] = numerical_data[col].replace(
