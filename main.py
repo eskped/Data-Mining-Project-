@@ -89,8 +89,8 @@ class Solver:
             training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
 
-        random_forest_model = RandomForestClassifier(criterion="gini", max_features=17,
-                                                     max_depth=12, n_estimators=101)
+        random_forest_model = RandomForestClassifier(
+            max_depth=20, max_features=50, n_estimators=51)
         random_forest_model.fit(training_data, labels.values.ravel())
         random_forest_result = self.cross_validation(
             random_forest_model, training_data, labels.values.ravel(), cv)
@@ -109,7 +109,7 @@ class Solver:
             training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
         k_nearst_neighbor_model = KNeighborsClassifier(
-            n_neighbors=30, p=3, weights='uniform')
+            algorithm='auto', n_neighbors=30, p=3, weights='uniform')
         k_nearst_neighbor_model.fit(training_data, labels.values.ravel())
         k_nearst_neighbor_result = self.cross_validation(
             k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
@@ -141,24 +141,18 @@ class Solver:
         return naive_bayes_result
 
     def hyper_parameter_tuning(self, nominal_data, numerical_data):
-        """
-        parameters = {'kernel':('linear', 'rbf'), 'C':[1, 10]}
-        svc = svm.SVC()
-        clf = GridSearchCV(svc, parameters)
-        clf.fit(iris.data, iris.target)
-        GridSearchCV(estimator=SVC(),
-                    param_grid={'C': [1, 10], 'kernel': ('linear', 'rbf')})
-        sorted(clf.cv_results_.keys())
-        ['mean_fit_time', 'mean_score_time', 'mean_test_score',...
-        'param_C', 'param_kernel', 'params',...
-        'rank_test_score', 'split0_test_score',...
-        'split2_test_score', ...
-        'std_fit_time', 'std_score_time', 'std_test_score']
-        """
-        classifier = GaussianNB()
-        parameters = {'n_neighbors': [2, 30], 'p': [1, 2, 3], 'weights': (
-            'uniform', 'distance'),  'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute']}
-        clf = GridSearchCV(classifier, parameters, scoring='f1')
+
+        classifier = RandomForestClassifier()
+        parameters = {
+            'n_estimators': [51, 101, 201, 501],
+            'max_features': ['sqrt', 'log2', 5, 10, 15, 25, 50],
+            'max_depth': [3, 4, 5, 6, 7, 8, 9, 10],
+            'criterion': ['gini', 'entropy', 'log_loss']
+        }
+        # parameters = {
+        #     'n_estimators': [10, 20],
+        # }
+        clf = GridSearchCV(classifier, parameters, scoring='f1', n_jobs=8)
         training_data = pd.concat([numerical_data, nominal_data], axis=1)
         labels = self.df_target.copy()
         clf.fit(training_data, labels.values.ravel())
@@ -227,19 +221,30 @@ class Solver:
         # print(self.decision_tree_classifier(None,
         #                                     self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, True))
         """Results from random forest classifier:
-        0.76 when using cv = 10, max_depth = 20, max_features = 50, n_estimators = 51
-
+        df_numerical_min_max_mean_imputed: CV score=0.784. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 25, 'n_estimators': 201}
+        df_numerical_mean_imputed: CV score=0.778. Best parameters from gridsearch: {'criterion': 'entropy', 'max_depth': 5, 'max_features': 50, 'n_estimators': 201}. 
+        df_numerical_median_imputed: CV score=0.782. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 5, 'max_features': 50, 'n_estimators': 51}
+        df_numerical_standardized_mean_imputed: score=0.781. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 50, 'n_estimators': 201}
+        df_numerical_standardized_median_imputed: CV score=0.780. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 50, 'n_estimators': 201}
+        df_numerical_min_max_median_imputed: CV score=0.780. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 50, 'n_estimators': 201}
+        df_numerical_10_to_mean_imputed: CV score=0.781. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 3, 'max_features': 50, 'n_estimators': 101}
+        df_numerical_10_to_median_imputed: CV score=0.779. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 6, 'max_features': 50, 'n_estimators': 501}
+        df_numerical_robust_mean_imputed: CV score=0.783. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 25, 'n_estimators': 501}
+        df_numerical_robust_median_imputed: CV score=0.781. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 50, 'n_estimators': 51}
+        df_numerical_maxabs_mean_imputed: CV score=0.782. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 8, 'max_features': 50, 'n_estimators': 201}
+        df_numerical_maxabs_median_imputed: CV score=0.779. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 9, 'max_features': 50, 'n_estimators': 101}
         """
-        # print(results=self.random_forest_classifier(None,
-        #                                             self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, False))
+
+        # print(self.random_forest_classifier(None,
+        #                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, False))
 
         """Results from K Nearst Neighbor classifier:
         Use df_numerical_min_max_[]_imputed, df_numerical_maxabs_[]_imputed
-        Results from 0.6-0.85. Mean 0.77
+        Results from 0.6-0.85. Mean 0.768
         Hyperparameters: algorithm': 'auto', 'n_neighbors': 30, 'p': 3, 'weights': 'uniform'
         """
         # print(self.k_nearst_neighbor_classifier(None,
-        #                                         self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, True))
+        #                                         self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, False))
 
         """ results from Naive Bayes classifier:
         numerical data: df_numerical_min_max_median_imputed, df_numerical_maxabs_mean_imputed or df_numerical_maxabs_median_imputed
@@ -248,6 +253,13 @@ class Solver:
         """
         # print(self.naive_bayes_classifier(
         #     self.df_numerical_maxabs_median_imputed, self.df_nominal_median_imputed, 10, False))
+
+        for _, key in enumerate(numerical_imputed):
+            print(f'Numerical data is: {key}')
+            self.hyper_parameter_tuning(
+                numerical_imputed[key], self.df_nominal_median_imputed)
+
+            # print(numerical_imputed[key])
 
         # self.hyper_parameter_tuning(
         #     self.df_numerical_maxabs_median_imputed, self.df_nominal_median_imputed)
