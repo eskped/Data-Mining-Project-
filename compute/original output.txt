@@ -1,0 +1,26 @@
+Decision Tree Entropy
+CTR: (0.962, 0.835)
+0.9626666666666667 {'max_depth': 2}
+
+Decision Tree Gini
+CTR: (0.962, 0.835)
+
+Random Forest Entropy
+CTR: (0.944, 0.713)
+0.944 {'max_depth': 3}
+
+Random Forest Gini
+CTR: (0.942, 0.698)
+0.942 {'max_depth': 3}
+
+kNN
+CTR: (0.963, 0.839)
+0.9639999999999999 {'n_neighbors': 9}
+
+Gaussian NB
+CTR: (0.162, 0.197)
+0.16266666666666663
+
+Voting Ensemble
+CTR: (0.966, 0.844)
+0.966

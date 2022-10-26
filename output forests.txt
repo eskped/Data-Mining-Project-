@@ -1,0 +1,32 @@
+
+(('DecisionTree Entropy', DecisionTreeClassifier(criterion='entropy', max_depth=2, max_leaf_nodes=4)), ('knn', KNeighborsClassifier(n_neighbors=9)))
+Acc and f1: (0.966, 0.845)Parameters: {'voting': 'hard'}
+
+
+
+(('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('knn', KNeighborsClassifier(n_neighbors=9)))
+Acc and f1: (0.966, 0.845)Parameters: {'voting': 'hard'}
+
+
+
+(('DecisionTree Entropy', DecisionTreeClassifier(criterion='entropy', max_depth=2, max_leaf_nodes=4)), ('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9)))
+Acc and f1: (0.966, 0.845)Parameters: {'voting': 'hard'}
+
+
+
+(('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9)))
+Acc and f1: (0.965, 0.843)Parameters: {'voting': 'hard'}
+
+
+
+(('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9)), ('Gaussian NB', GaussianNB()))
+Acc and f1: (0.965, 0.842)Parameters: {'voting': 'hard'}
+
+(('DecisionTree Entropy', DecisionTreeClassifier(criterion='entropy', max_depth=2, max_leaf_nodes=4)), ('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9)))
+Acc and f1: (0.965, 0.842)Parameters: {'voting': 'hard'}
+
+
+
+(('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9)), ('Gaussian NB', GaussianNB()))
+Acc and f1: (0.966, 0.844)Parameters: {'voting': 'hard'}
+

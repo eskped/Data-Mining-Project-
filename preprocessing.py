@@ -2,8 +2,8 @@ from sklearn import preprocessing
 import numpy as np
 import pandas as pd
 from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
-from sklearn.preprocessing import maxabs_scale
+from sklearn.impute import IterativeImputer, SimpleImputer
+from sklearn.preprocessing import MinMaxScaler, maxabs_scale
 
 
 def standardize(numerical_data):
@@ -12,9 +12,11 @@ def standardize(numerical_data):
     return pd.DataFrame(
         standardized_numerical_data, columns=numerical_data.columns)
 
+
 def maxabs(numerical_data):
     return pd.DataFrame(maxabs_scale(numerical_data), columns=numerical_data.columns)
-    
+
+
 def min_max_normalize(numerical_data):
     scaler = preprocessing.MaxAbsScaler().fit(numerical_data)
     normalized_data = scaler.transform(numerical_data)
@@ -101,3 +103,51 @@ def multivariate_imputation(data, numerical_data, nominal_data):
         df_imp = pd.read_csv('df_nominal_multivariate_imputed.csv')
 
         return df_imputed, df_imp, df_imput
+
+
+def normalize(data):
+
+    data0 = data.loc[data['Target (Col 107)'] == 0]
+    data1 = data.loc[data['Target (Col 107)'] == 1]
+
+    numericalData0 = data0.iloc[:, :103]
+    nominalData0 = data0.iloc[:, 103:]
+
+    numericalData0 = numericalData0.interpolate(
+        method='linear', axis=0, limit_direction='both')
+    imputer = SimpleImputer(missing_values=np.nan, strategy='most_frequent')
+    imputer.fit(nominalData0)
+    nominalData0 = pd.DataFrame(imputer.transform(
+        nominalData0), index=nominalData0.index)
+
+    nominalData0.rename({0: 'Nom (Col 104)',
+                         1: 'Nom (Col 105)',
+                         2: 'Nom (Col 106)',
+                         3: 'Target (Col 107)'}, axis=1, inplace=True)
+
+    data0 = pd.concat([numericalData0, nominalData0], axis=1, join="inner")
+
+    numericalData1 = data1.iloc[:, :103]
+    nominalData1 = data1.iloc[:, 103:]
+
+    numericalData1 = numericalData1.interpolate(
+        method='linear', axis=0, limit_direction='both')
+    imputer = SimpleImputer(missing_values=np.nan, strategy='most_frequent')
+    imputer.fit(nominalData1)
+    nominalData1 = pd.DataFrame(imputer.transform(
+        nominalData1), index=nominalData1.index)
+
+    nominalData1.rename({0: 'Nom (Col 104)',
+                         1: 'Nom (Col 105)',
+                         2: 'Nom (Col 106)',
+                         3: 'Target (Col 107)'}, axis=1, inplace=True)
+
+    data1 = pd.concat([numericalData1, nominalData1], axis=1, join="inner")
+
+    data = pd.concat([data0, data1], axis=0, join="inner")
+
+    normalScaler = MinMaxScaler()
+    normalizedData = pd.DataFrame(
+        normalScaler.fit_transform(data), columns=data.columns)
+
+    return normalizedData, normalizedData.iloc[:, :103], normalizedData.iloc[:, 103:106]

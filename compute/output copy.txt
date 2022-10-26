@@ -1,0 +1,348 @@
+df_numerical_mean_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.752, 0.752)
+0.7520536604197867 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.947, 0.751)
+0.9479999999999998 {'max_depth': 2}
+
+kNN
+CTR: (0.168, 0.168)
+0.1688152038618741 {'n_neighbors': 1, 'p': 1}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.799, 0.799)
+0.7994587140030014
+{'voting': 'soft'}
+
+df_numerical_median_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.751, 0.751)
+0.7515171845138693 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.949, 0.759)
+0.9493333333333334 {'max_depth': 2}
+
+kNN
+CTR: (0.178, 0.178)
+0.17871335607292224 {'n_neighbors': 1, 'p': 2}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.806, 0.806)
+0.8067670918996148
+{'voting': 'soft'}
+
+df_numerical_standardized_mean_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.752, 0.752)
+0.7520536604197867 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.947, 0.751)
+0.9479999999999998 {'max_depth': 2}
+
+kNN
+CTR: (0.276, 0.276)
+0.27603253751079837 {'n_neighbors': 1, 'p': 1}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.799, 0.799)
+0.7994587140030014
+{'voting': 'soft'}
+
+df_numerical_standardized_median_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.751, 0.751)
+0.7515171845138693 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.949, 0.759)
+0.9493333333333334 {'max_depth': 2}
+
+kNN
+CTR: (0.276, 0.276)
+0.2765111699894308 {'n_neighbors': 1, 'p': 1}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.799, 0.799)
+0.7994587140030014
+{'voting': 'soft'}
+
+df_numerical_min_max_mean_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.752, 0.752)
+0.7520536604197867 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.947, 0.751)
+0.9479999999999998 {'max_depth': 2}
+
+kNN
+CTR: (0.819, 0.819)
+0.8191913343238572 {'n_neighbors': 21, 'p': 1}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.819, 0.819)
+0.8191913343238572
+{'voting': 'soft'}
+
+df_numerical_min_max_median_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.751, 0.751)
+0.7515171845138693 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.949, 0.759)
+0.9493333333333334 {'max_depth': 2}
+
+kNN
+CTR: (0.819, 0.819)
+0.8191913343238572 {'n_neighbors': 21, 'p': 2}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.815, 0.815)
+0.8152140615965845
+{'voting': 'soft'}
+
+df_numerical_10_to_mean_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.752, 0.752)
+0.7520536604197867 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.948, 0.75)
+0.9480000000000001 {'max_depth': 2}
+
+kNN
+CTR: (0.187, 0.187)
+0.1870082241032814 {'n_neighbors': 1, 'p': 1}
+
+Gaussian NB
+CTR: (0.195, 0.195)
+0.1953413486652584
+
+Voting Ensemble
+CTR: (0.803, 0.803)
+0.8034359867302744
+{'voting': 'soft'}
+
+df_numerical_10_to_median_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.751, 0.751)
+0.7515171845138693 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.949, 0.759)
+0.9493333333333334 {'max_depth': 2}
+
+kNN
+CTR: (0.191, 0.191)
+0.19156707006790433 {'n_neighbors': 1, 'p': 2}
+
+Gaussian NB
+CTR: (0.195, 0.195)
+0.1953413486652584
+
+Voting Ensemble
+CTR: (0.814, 0.814)
+0.814615332368823
+{'voting': 'soft'}
+
+df_numerical_robust_mean_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.752, 0.752)
+0.7520536604197867 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.947, 0.751)
+0.9479999999999998 {'max_depth': 2}
+
+kNN
+CTR: (0.311, 0.311)
+0.3119271328926501 {'n_neighbors': 1, 'p': 1}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.799, 0.799)
+0.7994587140030014
+{'voting': 'soft'}
+
+df_numerical_robust_median_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.751, 0.751)
+0.7515171845138693 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.949, 0.759)
+0.9493333333333334 {'max_depth': 2}
+
+kNN
+CTR: (0.317, 0.317)
+0.3178990404951134 {'n_neighbors': 1, 'p': 1}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.799, 0.799)
+0.7994587140030014
+{'voting': 'soft'}
+
+df_numerical_maxabs_mean_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.752, 0.752)
+0.7520536604197867 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.947, 0.751)
+0.9479999999999998 {'max_depth': 2}
+
+kNN
+CTR: (0.819, 0.819)
+0.8191913343238572 {'n_neighbors': 21, 'p': 1}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.819, 0.819)
+0.8191913343238572
+{'voting': 'soft'}
+
+df_numerical_maxabs_median_imputed
+Decision Tree Entropy
+CTR: (0.819, 0.819)
+0.8191913343238572 {'criterion': 'entropy', 'max_depth': 1, 'max_leaf_nodes': 2}
+
+Decision Tree Gini
+CTR: (0.819, 0.819)
+
+Random Forest Entropy
+CTR: (0.751, 0.751)
+0.7515171845138693 {'max_depth': 2}
+
+Random Forest Gini
+CTR: (0.949, 0.759)
+0.9493333333333334 {'max_depth': 2}
+
+kNN
+CTR: (0.819, 0.819)
+0.8191913343238572 {'n_neighbors': 21, 'p': 2}
+
+Gaussian NB
+CTR: (0.194, 0.194)
+0.19419646436307345
+
+Voting Ensemble
+CTR: (0.815, 0.815)
+0.8152140615965845
+{'voting': 'soft'}
+

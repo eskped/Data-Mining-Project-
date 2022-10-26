@@ -1,0 +1,35 @@
+[('DecisionTree Entropy', DecisionTreeClassifier(criterion='entropy', max_depth=2, max_leaf_nodes=4)), ('knn', KNeighborsClassifier(n_neighbors=9))]
+Best F1: 0.845
+Best Acc: 0.966
+Best Weights: [0.5, 0.5]
+
+[('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('knn', KNeighborsClassifier(n_neighbors=9))]
+Best F1: 0.845
+Best Acc: 0.966
+Best Weights: [0.5, 0.5]
+
+[('DecisionTree Entropy', DecisionTreeClassifier(criterion='entropy', max_depth=2, max_leaf_nodes=4)), ('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9))]
+Best F1: 0.852
+Best Acc: 0.967
+Best Weights: [0.25, 0.5, 0.5]
+
+[('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9))]
+Best F1: 0.849
+Best Acc: 0.967
+Best Weights: [0.25, 0.25, 0.5]
+
+[('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9)), ('Gaussian NB', GaussianNB())]
+Best F1: 0.841
+Best Acc: 0.964
+Best Weights: [0.5, 0.5, 0.75]
+
+[('DecisionTree Entropy', DecisionTreeClassifier(criterion='entropy', max_depth=2, max_leaf_nodes=4)), ('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', RandomForestClassifier(max_depth=20, n_estimators=150))]
+Best F1: 0.834
+Best Acc: 0.963
+Best Weights: [1, 1, 0.5, 0.5]
+
+[('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('Random Forest Entropy', RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9)), ('Gaussian NB', GaussianNB())]
+Best F1: 0.845
+Best Acc: 0.965
+Best Weights: [1, 0.5, 0.75, 0.75]
+

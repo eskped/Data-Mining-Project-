@@ -1,0 +1,2 @@
+[('DecisionTree Entropy', DecisionTreeClassifier(criterion='entropy', max_depth=2, max_leaf_nodes=4,
+                       random_state=14)), ('knn', KNeighborsClassifier(n_neighbors=9))]

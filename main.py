@@ -2,269 +2,170 @@ import sys
 import pandas as pd
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
+from sklearn.preprocessing import StandardScaler, MaxAbsScaler, MinMaxScaler, RobustScaler
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import cross_validate
 import matplotlib.pyplot as plt
 from preprocessing import *
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn import metrics, tree, ensemble, neighbors, linear_model
+import pickle
+import math
+import json
+import itertools
 
 
-class Solver:
+class Predict:
 
-    def __init__(self, data_filename, test_data_filename):
-        self.df = pd.read_csv(data_filename)
-        self.test_df = pd.read_csv(test_data_filename)
-        self.f1_sore = -sys.maxsize
-        self.nominal_columns = [
-            'Nom (Col 104)', 'Nom (Col 105)', 'Nom (Col 106)']
-        self.target_column = ['Target (Col 107)', ]
-        self.df_nominal = self.df[self.nominal_columns]
-        self.df_numerical = self.df.drop(
-            self.nominal_columns, axis=1)
-        if len(self.df.columns) == 107:
-            self.df_target = self.df[self.target_column]
-            self.df_numerical = self.df_numerical.drop(
-                self.target_column, axis=1)
-        self.df_numericals_processed = []
-        self.df_nominals_processed = []
+    def __init__(self, filenameData, filenameTestdata):
+        self.data = pd.read_csv(filenameData)
+        self.data_test = pd.read_csv(filenameTestdata)
+        self.normalizedFeatures, self.target = self.preprocessing(self.data)
+        self.normalizedTestFeatures = self.test_preprocessing(self.data_test)
 
-    def cross_validation(self, model, _X, _y, _cv):
+    def preprocessing(self, data):
+        # Class specific preprocessing
+        data1 = data.loc[data['Target (Col 107)'] == 1]
+        data0 = data.loc[data['Target (Col 107)'] == 0]
 
-        results = cross_validate(estimator=model,
-                                 X=_X,
-                                 y=_y,
-                                 cv=_cv,
-                                 scoring=['f1'],
-                                 return_train_score=True)
+        nominalData0 = data0.iloc[:, 103:]
+        numericalData0 = data0.iloc[:, :103]
+        numericalData0 = numericalData0.interpolate(
+            axis=0, limit_direction='both', method='linear',)
+        imputer = SimpleImputer(missing_values=np.nan, strategy='median')
+        nominalData0 = pd.DataFrame(imputer.fit_transform(
+            nominalData0), index=nominalData0.index, columns=nominalData0.columns)
+        data0 = pd.concat([numericalData0, nominalData0], axis=1, join="inner")
 
-        return {
-            "Training F1 scores": results['train_f1'],
-            "Mean Training F1 Score": results['train_f1'].mean(),
-            "Validation F1 scores": results['test_f1'],
-            "Mean Validation F1 Score": results['test_f1'].mean(),
-        }
+        numericalData1 = data1.iloc[:, :103]
+        nominalData1 = data1.iloc[:, 103:]
+        numericalData1 = numericalData1.interpolate(
+            axis=0, limit_direction='both', method='linear',)
+        imputer = SimpleImputer(missing_values=np.nan, strategy='median')
+        nominalData1 = pd.DataFrame(imputer.fit_transform(
+            nominalData1), index=nominalData1.index, columns=nominalData1.columns)
+        data1 = pd.concat([numericalData1, nominalData1], axis=1, join="inner")
 
-    def plot_result(self, x_label, y_label, plot_title, train_data, val_data, cv):
-        plt.figure(figsize=(12, 6))
-        labels = []
-        for i in range(cv):
-            labels.append(f'{i}. Fold')
-        X_axis = np.arange(len(labels))
-        ax = plt.gca()
-        plt.ylim(0.40000, 1)
-        plt.bar(X_axis-0.2, train_data, 0.4, color='blue', label='Training')
-        plt.bar(X_axis+0.2, val_data, 0.4, color='red', label='Validation')
-        plt.title(plot_title, fontsize=30)
-        plt.xticks(X_axis, labels)
-        plt.xlabel(x_label, fontsize=14)
-        plt.ylabel(y_label, fontsize=14)
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        data = pd.concat([data0, data1], axis=0, join="inner")
 
-    def decision_tree_classifier(self, training_data, nominal_data, numerical_data, cv, plot):
-        if training_data == None:
-            training_data = pd.concat([numerical_data, nominal_data], axis=1)
-        labels = self.df_target.copy()
-        decision_tree_model = DecisionTreeClassifier(criterion="entropy", min_samples_split=10, max_depth=4,
-                                                     random_state=None)
-        decision_tree_model.fit(training_data, labels)
+        features = data.iloc[:, :106]
+        target = data.iloc[:, 106]
+        normalScaler = MinMaxScaler()
+        normalizedFeatures = pd.DataFrame(
+            normalScaler.fit_transform(features), columns=features.columns)
+        return normalizedFeatures, target
 
-        decision_tree_result = self.cross_validation(
-            decision_tree_model, training_data, labels, cv)
-        if plot:
-            model_name = "Decision Tree"
-            self.plot_result(model_name,
-                             "F1",
-                             "F1 Scores in 5 Folds",
-                             decision_tree_result["Training F1 scores"],
-                             decision_tree_result["Validation F1 scores"], cv)
+    def test_preprocessing(self, data):
+        normalScaler = MinMaxScaler()
 
-        return decision_tree_result
+        return pd.DataFrame(
+            normalScaler.fit_transform(data), columns=data.columns)
 
-    def random_forest_classifier(self, training_data, nominal_data, numerical_data, cv, plot):
-        if training_data == None:
-            training_data = pd.concat([numerical_data, nominal_data], axis=1)
-        labels = self.df_target.copy()
+    def predict(self):
+        normalizedFeatures = self.normalizedFeatures
+        target = self.target
 
-        random_forest_model = RandomForestClassifier(
-            max_depth=20, max_features=50, n_estimators=51)
-        random_forest_model.fit(training_data, labels.values.ravel())
-        random_forest_result = self.cross_validation(
-            random_forest_model, training_data, labels.values.ravel(), cv)
-        if plot:
-            model_name = "Random Forest"
-            self.plot_result(model_name,
-                             "F1",
-                             "F1 Scores in 5 Folds with random forest",
-                             random_forest_result["Training F1 scores"],
-                             random_forest_result["Validation F1 scores"], cv)
+        parameters = {'criterion': ['entropy'],
+                      'max_depth': range(2, 5), 'max_leaf_nodes': range(4, 5)}
+        clf = GridSearchCV(DecisionTreeClassifier(random_state=14), parameters, verbose=0,
+                           cv=10,  n_jobs=8, refit="f1", scoring=['accuracy', 'f1']).fit(X=normalizedFeatures, y=target)
+        i = clf.best_index_
+        f1 = round(clf.cv_results_['mean_test_f1'][i], 3)
+        accuracy = round(clf.cv_results_['mean_test_accuracy'][i], 3)
+        entropyDT = clf.best_estimator_
+        resultDTE = (clf.best_score_)
+        print("Decision Tree Entropy")
+        print("Acc and f1: "+str((accuracy, f1)))
+        print("Parameters: " + str(clf.best_params_) + '\n')
 
-        return random_forest_result
+        parameters = {'criterion': ['gini'],
+                      'max_depth': range(2, 3), 'max_leaf_nodes': range(3, 4)}
+        clf = GridSearchCV(DecisionTreeClassifier(random_state=38), parameters, verbose=0,
+                           cv=10,  n_jobs=8, refit="f1", scoring=['accuracy', 'f1']).fit(X=normalizedFeatures, y=target)
+        i = clf.best_index_
+        f1 = round(clf.cv_results_['mean_test_f1'][i], 3)
+        accuracy = round(clf.cv_results_['mean_test_accuracy'][i], 3)
+        giniDT = clf.best_estimator_
+        resultDTG = (clf.best_score_)
+        print("Decision Tree Gini")
+        print("Acc and f1: "+str((accuracy, f1)))
+        print("Parameters: " + str(clf.best_params_) + '\n')
 
-    def k_nearst_neighbor_classifier(self, training_data, nominal_data, numerical_data, cv, plot):
-        if training_data == None:
-            training_data = pd.concat([numerical_data, nominal_data], axis=1)
-        labels = self.df_target.copy()
-        k_nearst_neighbor_model = KNeighborsClassifier(
-            algorithm='auto', n_neighbors=30, p=3, weights='uniform')
-        k_nearst_neighbor_model.fit(training_data, labels.values.ravel())
-        k_nearst_neighbor_result = self.cross_validation(
-            k_nearst_neighbor_model, training_data, labels.values.ravel(), cv)
-        if plot:
-            model_name = "K Nearst Neighbor"
-            self.plot_result(model_name,
-                             "F1",
-                             "F1 Scores in 5 Folds with K Nearst Neighbor",
-                             k_nearst_neighbor_result["Training F1 scores"],
-                             k_nearst_neighbor_result["Validation F1 scores"], cv)
+        parameters = {'n_estimators': range(150, 151), 'criterion': ['gini', ],
+                      'max_depth': range(20, 21), }
+        clf = GridSearchCV(RandomForestClassifier(random_state=14), parameters, verbose=0,
+                           cv=10,  n_jobs=8, refit="f1", scoring=['accuracy', 'f1']).fit(X=normalizedFeatures, y=target)
+        i = clf.best_index_
+        f1 = round(clf.cv_results_['mean_test_f1'][i], 3)
+        accuracy = round(clf.cv_results_['mean_test_accuracy'][i], 3)
+        forest = clf.best_estimator_
+        resultFOR = (clf.best_score_)
+        print("Random forest")
+        print("Acc and f1: "+str((accuracy, f1)))
+        print("Parameters: " + str(clf.best_params_) + '\n')
 
-        return k_nearst_neighbor_result
+        parameters = {'n_neighbors': range(9, 10), 'weights': ['uniform'],
+                      'p': [2]}
+        neigh = GridSearchCV(KNeighborsClassifier(), parameters, verbose=0,
+                             cv=10,  n_jobs=8, refit="f1", scoring=['accuracy', 'f1']).fit(X=normalizedFeatures, y=target)
+        i = neigh.best_index_
+        f1 = round(neigh.cv_results_['mean_test_f1'][i], 3)
+        accuracy = round(neigh.cv_results_['mean_test_accuracy'][i], 3)
+        knn = neigh.best_estimator_
+        resultKNN = (neigh.best_score_)
+        print("K-nearest neighbour")
+        print("Acc and f1: "+str((accuracy, f1)))
+        print("Parameters: " + str(neigh.best_params_) + '\n')
 
-    def naive_bayes_classifier(self, nominal_data, numerical_data, cv, plot):
-        training_data = pd.concat([numerical_data, nominal_data], axis=1)
-        labels = self.df_target.copy()
-        naive_bayes_model = GaussianNB(var_smoothing=1)
-        naive_bayes_model.fit(training_data, labels.values.ravel())
-        naive_bayes_result = self.cross_validation(
-            naive_bayes_model, training_data, labels.values.ravel(), cv)
-        if plot:
-            model_name = "Naive Bayes"
-            self.plot_result(model_name,
-                             "F1",
-                             "F1 Scores in 5 Folds with Naive Bayes",
-                             naive_bayes_result["Training F1 scores"],
-                             naive_bayes_result["Validation F1 scores"], cv)
+        parameters = {}
+        gnb = GridSearchCV(GaussianNB(), parameters, verbose=0,
+                           cv=10,  n_jobs=8, refit="f1", scoring=['accuracy', 'f1']).fit(X=normalizedFeatures, y=target)
+        i = gnb.best_index_
+        gnbBest = gnb.best_estimator_
+        resultGNB = (gnb.best_score_)
+        f1 = round(gnb.cv_results_['mean_test_f1'][i], 3)
+        accuracy = round(gnb.cv_results_['mean_test_accuracy'][i], 3)
+        print("Naive Bayes")
+        print("Acc and f1: "+str((accuracy, f1)))
+        print("Parameters: " + str(gnb.best_params_) + '\n')
 
-        return naive_bayes_result
+        estimator = [('DecisionTree Gini', DecisionTreeClassifier(max_depth=2, max_leaf_nodes=3)), ('Random Forest Entropy',
+                                                                                                    RandomForestClassifier(max_depth=20, n_estimators=150)), ('knn', KNeighborsClassifier(n_neighbors=9))]
+        parameters = {'weights': [[1, 2, 2]], 'voting': ['hard'], }
+        votingEnsemble2 = GridSearchCV(VotingClassifier(
+            estimator), parameters,  verbose=1, cv=10, n_jobs=8, refit="f1", scoring=['accuracy', 'f1']).fit(X=normalizedFeatures, y=target)
+        i = votingEnsemble2.best_index_
+        f1 = round(votingEnsemble2.cv_results_['mean_test_f1'][i], 3)
+        accuracy = round(votingEnsemble2.cv_results_[
+            'mean_test_accuracy'][i], 3)
+        ensemble2 = votingEnsemble2.best_estimator_
+        resultENS2 = (votingEnsemble2.best_score_)
+        ensemblePredict = votingEnsemble2.predict(
+            normalizedFeatures).reshape(-1, 1)
+        print("Voting Forest 2")
+        print("Acc and f1: "+str((accuracy, f1)))
+        print("Parameters: " + str(votingEnsemble2.best_params_) + '\n')
 
-    def hyper_parameter_tuning(self, nominal_data, numerical_data):
-
-        classifier = RandomForestClassifier()
-        parameters = {
-            'n_estimators': [51, 101, 201, 501],
-            'max_features': ['sqrt', 'log2', 5, 10, 15, 25, 50],
-            'max_depth': [3, 4, 5, 6, 7, 8, 9, 10],
-            'criterion': ['gini', 'entropy', 'log_loss']
-        }
-        # parameters = {
-        #     'n_estimators': [10, 20],
-        # }
-        clf = GridSearchCV(classifier, parameters, scoring='f1', n_jobs=8)
-        training_data = pd.concat([numerical_data, nominal_data], axis=1)
-        labels = self.df_target.copy()
-        clf.fit(training_data, labels.values.ravel())
-        print("Best parameters from gridsearch: {}".format(
-            clf.best_params_))
-        print("CV score=%0.3f" % clf.best_score_)
+        parameters = {'criterion': ['entropy'],
+                      'max_depth': range(2, 100), }  # 'max_leaf_nodes': range(4, 5)}
+        clf = GridSearchCV(DecisionTreeClassifier(random_state=23), parameters, verbose=0,
+                           cv=10,  n_jobs=8, refit="f1", scoring=['accuracy', 'f1']).fit(X=ensemblePredict, y=target)
+        i = clf.best_index_
+        f1 = round(clf.cv_results_['mean_test_f1'][i], 3)
+        accuracy = round(clf.cv_results_['mean_test_accuracy'][i], 3)
+        entropyDT = clf.best_estimator_
+        resultDTE = (clf.best_score_)
+        print("Decision Tree Entropy")
+        print("Acc and f1: "+str((accuracy, f1)))
+        print("Parameters: " + str(clf.best_params_) + '\n')
 
     def main(self):
-
-        # Normalization methods
-        numerical_data = self.df_numerical.copy()
-        nominal_data = self.df_nominal.copy()
-        self.df_numerical_standardized = standardize(numerical_data)
-        self.df_numerical_min_max_normalized = min_max_normalize(
-            numerical_data)
-        self.df_numerical_robust_normalized = robust_standardize(
-            numerical_data)
-        self.df_numerical_maxabs_scaled = maxabs(numerical_data)
-
-        # Outlier processing methods
-        # Converts the outliers to 'NaN', 'mean' and 'standardization'
-        self.df_numerical_std3_to_NaN, self.df_numerical_std3_to_mean, self.df_numerical_std3_to_std, self.df_numerical_10_to_NaN, self.df_numerical_10_to_mean, self.df_numerical_10_to_std = std3_and_10_outlier_processing(
-            numerical_data)
-
-        # NaN imputation methods
-        self.df_numerical_mean_imputed, self.df_numerical_median_imputed, self.df_nominal_median_imputed = mean_and_median_imputation(
-            numerical_data, nominal_data)
-        self.df_numerical_standardized_mean_imputed, self.df_numerical_standardized_median_imputed, _ = mean_and_median_imputation(
-            self.df_numerical_standardized, nominal_data)
-        self.df_numerical_min_max_mean_imputed, self.df_numerical_min_max_median_imputed, _ = mean_and_median_imputation(
-            self.df_numerical_min_max_normalized, nominal_data)
-        self.df_numerical_10_to_mean_imputed, self.df_numerical_10_to_median_imputed, _ = mean_and_median_imputation(
-            self.df_numerical_10_to_std, nominal_data)
-        self.df_numerical_robust_mean_imputed, self.df_numerical_robust_median_imputed, _ = mean_and_median_imputation(
-            self.df_numerical_robust_normalized, nominal_data)
-        self.df_numerical_maxabs_mean_imputed, self.df_numerical_maxabs_median_imputed, _ = mean_and_median_imputation(
-            self.df_numerical_maxabs_scaled, nominal_data)
-
-        numerical_imputed = {
-            "df_numerical_mean_imputed": self.df_numerical_mean_imputed,
-            "df_numerical_median_imputed": self.df_numerical_median_imputed,
-            "df_numerical_standardized_mean_imputed": self.df_numerical_standardized_mean_imputed,
-            "df_numerical_standardized_median_imputed": self.df_numerical_standardized_median_imputed,
-            "df_numerical_min_max_mean_imputed": self.df_numerical_min_max_mean_imputed,
-            "df_numerical_min_max_median_imputed": self.df_numerical_min_max_median_imputed,
-            "df_numerical_10_to_mean_imputed": self.df_numerical_10_to_mean_imputed,
-            "df_numerical_10_to_median_imputed": self.df_numerical_10_to_median_imputed,
-            "df_numerical_robust_mean_imputed": self.df_numerical_robust_mean_imputed,
-            "df_numerical_robust_median_imputed": self.df_numerical_robust_median_imputed,
-            "df_numerical_maxabs_mean_imputed": self.df_numerical_maxabs_mean_imputed,
-            "df_numerical_maxabs_median_imputed": self.df_numerical_maxabs_median_imputed,
-        }
-
-        self.df_numerical_multivariate_imputed, self.df_nominal_multivariate_imputed, self.df_multivariate_imputed = multivariate_imputation(
-            self.df.copy(), numerical_data, nominal_data)
-
-        self.df_numericals_processed = [
-            self.df_numerical_mean_imputed, self.df_numerical_median_imputed, self.df_numerical_standardized_mean_imputed, self.df_numerical_standardized_median_imputed, self.df_numerical_min_max_mean_imputed, self.df_numerical_min_max_median_imputed, self.df_numerical_10_to_mean_imputed, self.df_numerical_10_to_median_imputed, self.df_numerical_robust_mean_imputed, self.df_numerical_robust_median_imputed, self.df_numerical_multivariate_imputed]
-        self.df_nominals_processed = [
-            self.df_nominal_median_imputed, self.df_nominal_multivariate_imputed]
-
-        """ Results from decision tree classifier:
-        Results of range 0.5 - 0.75 when using numerical and nominal seperately. Max-depth is best around 4
-        When using df multivarite results of 1.0
-        """
-        # print(self.decision_tree_classifier(None,
-        #                                     self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, True))
-        """Results from random forest classifier:
-        df_numerical_min_max_mean_imputed: CV score=0.784. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 25, 'n_estimators': 201}
-        df_numerical_mean_imputed: CV score=0.778. Best parameters from gridsearch: {'criterion': 'entropy', 'max_depth': 5, 'max_features': 50, 'n_estimators': 201}. 
-        df_numerical_median_imputed: CV score=0.782. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 5, 'max_features': 50, 'n_estimators': 51}
-        df_numerical_standardized_mean_imputed: score=0.781. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 50, 'n_estimators': 201}
-        df_numerical_standardized_median_imputed: CV score=0.780. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 50, 'n_estimators': 201}
-        df_numerical_min_max_median_imputed: CV score=0.780. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 50, 'n_estimators': 201}
-        df_numerical_10_to_mean_imputed: CV score=0.781. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 3, 'max_features': 50, 'n_estimators': 101}
-        df_numerical_10_to_median_imputed: CV score=0.779. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 6, 'max_features': 50, 'n_estimators': 501}
-        df_numerical_robust_mean_imputed: CV score=0.783. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 25, 'n_estimators': 501}
-        df_numerical_robust_median_imputed: CV score=0.781. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 10, 'max_features': 50, 'n_estimators': 51}
-        df_numerical_maxabs_mean_imputed: CV score=0.782. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 8, 'max_features': 50, 'n_estimators': 201}
-        df_numerical_maxabs_median_imputed: CV score=0.779. Best parameters from gridsearch: {'criterion': 'gini', 'max_depth': 9, 'max_features': 50, 'n_estimators': 101}
-        """
-
-        # print(self.random_forest_classifier(None,
-        #                                     self.df_numerical_mean_imputed, self.df_nominal_median_imputed, 10, False))
-
-        """Results from K Nearst Neighbor classifier:
-        Use df_numerical_min_max_[]_imputed, df_numerical_maxabs_[]_imputed
-        Results from 0.6-0.85. Mean 0.768
-        Hyperparameters: algorithm': 'auto', 'n_neighbors': 30, 'p': 3, 'weights': 'uniform'
-        """
-        # print(self.k_nearst_neighbor_classifier(None,
-        #                                         self.df_numerical_min_max_median_imputed, self.df_nominal_median_imputed, 10, False))
-
-        """ results from Naive Bayes classifier:
-        numerical data: df_numerical_min_max_median_imputed, df_numerical_maxabs_mean_imputed or df_numerical_maxabs_median_imputed
-        results: 0.766
-        Hyper: var_smooting: 1
-        """
-        # print(self.naive_bayes_classifier(
-        #     self.df_numerical_maxabs_median_imputed, self.df_nominal_median_imputed, 10, False))
-
-        for _, key in enumerate(numerical_imputed):
-            print(f'Numerical data is: {key}')
-            self.hyper_parameter_tuning(
-                numerical_imputed[key], self.df_nominal_median_imputed)
-
-            # print(numerical_imputed[key])
-
-        # self.hyper_parameter_tuning(
-        #     self.df_numerical_maxabs_median_imputed, self.df_nominal_median_imputed)
+        print("hello")
+        self.predict()
 
 
-if __name__ == '__main__':
-    solver = Solver('ecoli.csv', 'ecoli_test.csv')
-    solver.main()
+if __name__ == "__main__":
+    predict = Predict("ecoli.csv", "ecoli_test.csv")
+    predict.main()
